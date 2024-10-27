@@ -317,42 +317,68 @@ async def level_autocomplete(interaction: discord.Interaction, current: str) -> 
         for level in levels if current.lower() in level[1].lower()
     ][:25]  # Discord has a limit of 25 choices
 
+# Command decorator that creates a slash command named "my_scores"
 @tree.command(name="my_scores", description="View your scores for all levels")
+# Adds description for the visibility parameter in Discord's UI
 @app_commands.describe(visibility="Choose whether to display scores publicly or privately")
+# Main command function that takes the interaction object and an optional visibility parameter
 async def my_scores(interaction: discord.Interaction, visibility: Literal['Public', 'Private'] = 'Private'):
+    # Check if command is used in an allowed channel
     if not is_allowed_channel(interaction):
         await interaction.response.send_message("This command can only be used in designated channels.", ephemeral=True)
         return
 
+    # Get user information from the interaction
     user_id = str(interaction.user.id)
     user_name = interaction.user.name
 
+    # Fetch all scores for this user from the database
     user_scores = get_user_scores(user_id)
 
+    # If user has no scores, send a message and exit
     if not user_scores:
         await interaction.response.send_message("You haven't recorded any scores yet.", ephemeral=(visibility == 'Private'))
         return
 
+    # Initialize list to hold multiple embeds (Discord has a 25 field limit per embed)
     embeds = []
+    # Create first embed with user's name
     current_embed = discord.Embed(title=f"Scores for {user_name}", color=0x00ff00)
     field_count = 0
 
+    # Iterate through each score record
+    # get_user_scores() returns tuples of (level_id, level_name, difficulty, score)
     for level_id, level_name, difficulty, score in user_scores:
+        # If current embed is full (25 fields), create a new one
         if field_count >= 25:
             embeds.append(current_embed)
             current_embed = discord.Embed(title=f"Scores for {user_name} (Continued)", color=0x00ff00)
             field_count = 0
 
-        current_embed.add_field(name=f"{level_name} ({difficulty})", value=f"Score: {score}", inline=False)
+        # Add score as a field to the current embed
+        # name= is the header for each field
+        # value= is the content below the header
+        # score:, adds thousands separators (e.g., 1,000,000)
+        current_embed.add_field(
+            name=f"{level_name} ({difficulty})", 
+            value=f"Score: {score:,}",
+            inline=False
+        )
         field_count += 1
 
+    # Add the last embed if it has any fields
     if field_count > 0:
         embeds.append(current_embed)
 
+    # Send the first embed
+    # ephemeral=True means only the command user can see it
     await interaction.response.send_message(embed=embeds[0], ephemeral=(visibility == 'Private'))
+    
+    # Send any additional embeds as follow-up messages
     for embed in embeds[1:]:
         await interaction.followup.send(embed=embed, ephemeral=(visibility == 'Private'))
 
+    # Log that the scores were displayed
     logging.info(f"User scores displayed for {user_name}")
 
 @tree.command(name="check_user_scores", description="Check a specific user's scores for each level (Admin only)")
