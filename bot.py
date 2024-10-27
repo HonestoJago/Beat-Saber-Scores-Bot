@@ -6,12 +6,13 @@ from config import Config
 from database import Database
 from cogs.scores import ScoresCog
 
-# Set up logging
-logging.basicConfig(
-    filename=Config.LOG_FILE, 
-    level=getattr(logging, Config.LOG_LEVEL),
-    format='%(asctime)s:%(levelname)s:%(message)s'
-)
+def setup_logging():
+    """Initialize logging configuration"""
+    logging.basicConfig(
+        filename=Config.LOG_FILE, 
+        level=getattr(logging, Config.LOG_LEVEL),
+        format='%(asctime)s:%(levelname)s:%(message)s'
+    )
 
 class BeatSaberBot(discord.Client):
     def __init__(self):
@@ -56,23 +57,29 @@ class BeatSaberBot(discord.Client):
         if hasattr(self, 'db'):
             self.db.close()
 
-# Initialize bot
-client = BeatSaberBot()
+def run_bot():
+    """Initialize and run the bot"""
+    # Ensure backup folder exists
+    Config.ensure_backup_folder()
+    
+    # Initialize bot
+    client = BeatSaberBot()
 
-@client.event
-async def on_ready():
-    print(f'Logged in as {client.user}')
-    logging.info(f'Bot logged in as {client.user}')
-    try:
-        synced = await client.tree.sync()
-        print(f"Synced {len(synced)} command(s)")
-        logging.info(f"Synced {len(synced)} command(s)")
-    except Exception as e:
-        print(f"Failed to sync commands: {e}")
-        logging.error(f"Failed to sync commands: {e}")
+    @client.event
+    async def on_ready():
+        print(f'Logged in as {client.user}')
+        logging.info(f'Bot logged in as {client.user}')
+        try:
+            synced = await client.tree.sync()
+            print(f"Synced {len(synced)} command(s)")
+            logging.info(f"Synced {len(synced)} command(s)")
+        except Exception as e:
+            print(f"Failed to sync commands: {e}")
+            logging.error(f"Failed to sync commands: {e}")
 
-# Ensure backup folder exists
-Config.ensure_backup_folder()
+    # Run the bot
+    client.run(Config.BOT_TOKEN)
 
-# Run the bot
-client.run(Config.BOT_TOKEN)
+if __name__ == "__main__":
+    setup_logging()
+    run_bot()
