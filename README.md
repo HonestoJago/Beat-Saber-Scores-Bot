@@ -62,7 +62,6 @@ To add new levels:
 1. Edit `beat_saber_levels.csv` in a text editor (not Excel)
    - Each line should contain exactly one level name
    - Level names can contain any characters (including /, &, etc.)
-   - Names must match exactly what appears in Beat Saber
    - No commas or quotation marks needed
 
 ## Database Backups
