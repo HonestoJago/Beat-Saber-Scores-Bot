@@ -36,24 +36,25 @@ class BeatSaberBot(discord.Client):
             for command in scores_cog.get_app_commands():
                 self.tree.add_command(command)
             
-            # Start backup task
-            self.loop.create_task(backup_database(self.db))
+            # Start automatic backup task
+            self.loop.create_task(self._auto_backup())
         except Exception as e:
             logging.error(f"Error in setup_hook: {e}")
             raise
 
+    async def _auto_backup(self):
+        """Automatic backup task that runs every 24 hours"""
+        while True:
+            try:
+                await asyncio.sleep(24 * 60 * 60)  # 24 hours
+                backup_file = self.db.backup()
+                logging.info(f"Automatic backup created: {backup_file}")
+            except Exception as e:
+                logging.error(f"Error during automatic backup: {e}")
+
     def __del__(self):
         if hasattr(self, 'db'):
             self.db.close()
-
-# Async backup task
-async def backup_database(db):
-    while True:
-        try:
-            await asyncio.sleep(24 * 60 * 60)  # 24 hours
-            db.backup()
-        except Exception as e:
-            logging.error(f"Error during database backup: {e}")
 
 # Initialize bot
 client = BeatSaberBot()

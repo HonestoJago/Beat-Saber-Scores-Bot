@@ -253,23 +253,26 @@ class ScoresCog(commands.Cog):
             if current.lower() in name.lower()
         ][:25]  # Discord limit
 
-    @app_commands.command(name="debug_db", description="Debug database connection (Admin only)")
-    async def debug_db(self, interaction: discord.Interaction):
+    @app_commands.command(name="backup_now", description="Create a database backup (Admin only)")
+    async def backup_now(self, interaction: discord.Interaction):
         if not interaction.user.guild_permissions.administrator:
-            return
-        
-        try:
-            user_id = str(interaction.user.id)
-            levels = self.db.get_levels()
-            scores = self.db.get_user_scores(user_id)
-            
-            debug_info = (
-                f"Database connection test:\n"
-                f"- Levels found: {len(levels)}\n"
-                f"- Your scores found: {len(scores)}\n"
-                f"- Your user ID: {user_id}"
+            await interaction.response.send_message(
+                "You don't have permission to use this command.", 
+                ephemeral=True
             )
-            
-            await interaction.response.send_message(debug_info, ephemeral=True)
+            return
+
+        try:
+            backup_file = self.db.backup()
+            await interaction.response.send_message(
+                f"Database backed up successfully to: {backup_file}", 
+                ephemeral=True
+            )
+            logging.info(f"Manual backup created by {interaction.user.name}")
         except Exception as e:
-            await interaction.response.send_message(f"Debug error: {str(e)}", ephemeral=True)
+            error_msg = f"Failed to create backup: {str(e)}"
+            logging.error(error_msg)
+            await interaction.response.send_message(
+                error_msg, 
+                ephemeral=True
+            )

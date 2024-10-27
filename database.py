@@ -98,11 +98,19 @@ class Database:
     def backup(self) -> str:
         """Create a backup of the database"""
         try:
+            # Get current time for the backup filename
+            current_time = datetime.now()
             backup_filename = os.path.join(
                 Config.BACKUP_FOLDER,
-                f"beat_saber_scores_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+                f"beat_saber_scores_backup_{current_time.strftime('%Y%m%d_%H%M%S')}.db"
             )
+            
+            # Use copy2 to preserve metadata
             shutil.copy2(self.db_name, backup_filename)
+            
+            # Explicitly update the file's modification time to now
+            os.utime(backup_filename, (current_time.timestamp(), current_time.timestamp()))
+            
             logging.info(f"Database backed up to {backup_filename}")
             return backup_filename
         except Exception as e:
